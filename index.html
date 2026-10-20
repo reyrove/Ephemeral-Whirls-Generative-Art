@@ -1902,40 +1902,44 @@ class Looper {
 }
 
 // ============================================================
-// RENDER COMPOSITION
+// RENDER COMPOSITION (Adapts to w × h)
 // ============================================================
 
 function renderComposition(canvas, feats, r) {
   const ctx = canvas.getContext('2d');
   const w = canvas.width;
   const h = canvas.height;
-  const size = Math.min(w, h);
+  const maxDim = Math.max(w, h);
 
-  // Apply rotation based on side
+  // Apply rotation based on side (only for square, skip for non-square to keep edge-to-edge)
+  const isSquare = Math.abs(w - h) < 2;
+  
   ctx.save();
-  if (feats.side === 0) {
-    ctx.translate(size, 0);
-    ctx.rotate(Math.PI / 2);
-  } else if (feats.side === 1) {
-    ctx.translate(0, size);
-    ctx.rotate(-Math.PI / 2);
-  } else if (feats.side === 2) {
-    ctx.translate(size, size);
-    ctx.rotate(Math.PI);
+  if (isSquare) {
+    if (feats.side === 0) {
+      ctx.translate(w, 0);
+      ctx.rotate(Math.PI / 2);
+    } else if (feats.side === 1) {
+      ctx.translate(0, h);
+      ctx.rotate(-Math.PI / 2);
+    } else if (feats.side === 2) {
+      ctx.translate(w, h);
+      ctx.rotate(Math.PI);
+    }
   }
 
-  // Fill background
+  // Fill background (full rect)
   ctx.fillStyle = feats.backgroundColour;
-  ctx.fillRect(0, 0, size, size);
+  ctx.fillRect(0, 0, w, h);
 
-  // Base line style (overridden by each looper's colour)
+  // Base line style
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth = size / (r.rand() * 200 + 200);
+  ctx.lineWidth = maxDim / (r.rand() * 200 + 200);
 
-  // Initialize loopers
+  // Initialize loopers — spread across full width and height
   const loopers = [];
   for (let i = 0; i < feats.NumberOfLoopers; i++) {
-    loopers.push(new Looper(0, r.rand() * size, size, r, feats));
+    loopers.push(new Looper(0, r.rand() * h, maxDim, r, feats));
   }
 
   // Run the simulation — every step draws a small segment per looper
